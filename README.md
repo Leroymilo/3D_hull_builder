@@ -8,6 +8,6 @@ Update : you can now choose the format in which the result is saved and you can 
 I recommend having a square resolution because matplotlib will limit the plot in a square anyway.
 
 Settings warnings to avoid a rendering time over 1 minute (approximately) for a resolution of 800x800 :
-DoA = 3 -> N < 25
-DoA = 2 -> N < 100
+DoA = 3 -> N < 25;
+DoA = 2 -> N < 100;
 DoA = 1 -> N < 600
