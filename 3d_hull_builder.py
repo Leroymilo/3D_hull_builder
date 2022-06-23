@@ -1,9 +1,12 @@
 from time import time
 import numpy as np
-import matplotlib.pyplot as plt
 import random as rd
 import math as m
-import imageio.v2 as imageio
+import os
+
+import matplotlib.pyplot as plt
+import cv2
+from PIL import Image
 
 
 #Classes :
@@ -59,15 +62,18 @@ class Scatter :
         self.hull = set()
         self.hull_edges = set()
         
-        self.ax = plt.figure().add_subplot(projection="3d")
+        fig = plt.figure()
+        self.ax = fig.add_subplot(projection="3d")
         
         if DoA > 0 :
             self.frame = 0
-            self.writer = imageio.get_writer(f'{name}.gif', mode='I')
+            fig.set_size_inches(W, H)
+            plt.savefig("temp.png")
+            self.video = cv2.VideoWriter(f"{name}", 0, 15, Image.open("temp.png").size)
     
     def limits(self, dim) :
         values = [p.C[dim] for p in self.points]
-        return (min(values), max(values))
+        return (0.5*min(values), 0.5*max(values))
     
     def generate(self) :
         # Adds N points with coordinates within limits to the scatter
@@ -85,7 +91,7 @@ class Scatter :
 
     #Plotting functions :
     def draw(self, c="blue") :
-        self.ax.scatter(self.p_arr[:,0], self.p_arr[:,1], self.p_arr[:,2], c=c, marker='.')
+        self.ax.scatter(self.p_arr[:,0], self.p_arr[:,1], self.p_arr[:,2], c=c, marker='.', linewidths=0.5)
 
     def draw_hull(self, c="green") :
         for edge in self.hull_edges :
@@ -93,8 +99,9 @@ class Scatter :
     
     #Gif building
     def build_gif(self) :
-        plt.savefig(f"temp.png")
-        self.writer.append_data(imageio.imread("temp.png"))
+        self.ax.margins(x=-0.4, y=-0.4)
+        plt.savefig("temp.png")
+        self.video.write(cv2.imread("temp.png"))
     
     def start_gif(self) :    #Starts the gif by doing a full rotation around the scatter.
         self.ax.clear()
@@ -249,26 +256,37 @@ DoA = int(File.readline().strip().split(" : ")[1])
 N = int(File.readline().strip().split(" : ")[1])
 search_type = File.readline().strip().split(" : ")[1]
 name = File.readline().strip().split(" : ")[1]
+W, H = map(int, File.readline().strip().split(" : ")[1].split(', '))
 File.close()
 
 
 #Initialization of global variables :
 S = Scatter()
 S.generate()
-plt.get_current_fig_manager().full_screen_toggle()  #To enable matplotlib fullscreen
-
+#Drawing stuff
+plt.get_current_fig_manager().full_screen_toggle()
 
 #Running the thing : 
 if DoA > 0 :
+    print("Making video intro")
+    t0 = time()
     S.start_gif()
+    print(f"took {round(time()-t0, 6)}s")
 
 print("Starting algorithm")
 t0 = time()
 S.find_hull()
-print(f"building hull took {round(time()-t0, 6)}s (ploting, saving frames and building gif included)") 
+print(f"building hull took {round(time()-t0, 6)}s (ploting, saving frames and building video included)") 
 
 if DoA > 0 :
+    print("Making video outro")
+    t0 = time()
     S.end_gif()
+    cv2.destroyAllWindows()
+    S.video.release()
+    print(f"took {round(time()-t0, 6)}s")
+
+os.remove("temp.png")
 
 # You can uncomment the following lines to play around with the final result with matplotlib :
 # S.ax.clear()

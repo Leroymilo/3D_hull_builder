@@ -1,9 +1,10 @@
-detail of the animation (DoA) (integer between 0 and 3 included) : 2
-number of points (N) (integer) : 100
+detail of the animation (DoA) (integer between 0 and 3 included) : 1
+number of points (N) (integer) : 1000
 search type ('BFS' or 'DFS') : DFS
-name of result : mygif
+name of result : result.avi
+resolution (width, height in hundreds of pxls) : 12, 12
 
-Be aware that having to many points and a detail of animation of 2 or 3 will significantly lengthen render time.
+Be aware that having to many points and a detail of animation of 2 or 3 and/or high resolution will significantly lengthen render time.
 If the detail of animation is set to 0, there will be no Gif created.
 search type only matters if there's an animation.
 recommendation (render around 1 minute) : 
