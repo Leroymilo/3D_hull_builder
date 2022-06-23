@@ -5,6 +5,7 @@ import math as m
 import os
 
 import matplotlib.pyplot as plt
+import imageio.v2 as imageio
 import cv2
 from PIL import Image
 
@@ -17,7 +18,7 @@ class Point :
         self.C = (x, y, z)
     
     def __str__(self) : #For debugging
-        return f"({round(self.x, 2)}, {round(self.y)}, {round(self.z)})"
+        return f"({round(self.x, 2)},{round(self.y, 2)},{round(self.z, 2)})"
     
     #Comparaison methods :
     def __eq__(self, other) :
@@ -34,9 +35,10 @@ class Point :
         return hash(self.C)
 
 class Edge :
-    def __init__(self, A:Point, B:Point) :
+    def __init__(self, A:Point, B:Point, C:Point=None) :
         self.A = A
         self.B = B
+        self.C = C  #Point making the triangle this edge was found with.
     
     def __eq__(self, other) :
         if not isinstance(other, Edge):
@@ -44,10 +46,10 @@ class Edge :
         return {self.A, self.B} == {other.A, other.B}
     
     def __hash__(self) :
-        return hash((min(self.A, self.B), max(self.A, self.B)))
+        return hash((min(self.A, self.B), min(self.A, self.B)))
     
     def __str__(self) :
-        return f"({self.A}, {self.B})"
+        return f"({self.A},{self.B})"
     
     def draw(self, subplot:plt.subplot, color:str, width=1) :
         subplot.plot3D([self.A.x, self.B.x], [self.A.y, self.B.y], [self.A.z, self.B.z], c=color, linewidth=width)
@@ -59,8 +61,6 @@ class Scatter :
         self.points = []
         self.p_list = []
         self.p_arr = None
-        self.hull = set()
-        self.hull_edges = set()
         
         fig = plt.figure()
         self.ax = fig.add_subplot(projection="3d")
@@ -69,29 +69,28 @@ class Scatter :
             self.frame = 0
             fig.set_size_inches(W, H)
             plt.savefig("temp.png")
-            self.video = cv2.VideoWriter(f"{name}", 0, 15, Image.open("temp.png").size)
-    
-    def limits(self, dim) :
-        values = [p.C[dim] for p in self.points]
-        return (0.5*min(values), 0.5*max(values))
+            if name.endswith(".gif") :
+                self.writer = imageio.get_writer(name)
+            else :
+                self.writer = cv2.VideoWriter(name, 0, 15, Image.open("temp.png").size)
     
     def generate(self) :
         # Adds N points with coordinates within limits to the scatter
+        o = Point(0, 0, 0)
+        X, Y, Z = 0, 0, 0
         for _ in range(N) :
-            r, theta, phi = rd.random(), m.pi*rd.random(), 2*m.pi*rd.random()
-            x, y, z = r*m.cos(phi)*m.cos(theta), r*m.cos(phi)*m.sin(theta), r*m.sin(phi)
+            x, y, z = 2*rd.random()-1, 2*rd.random()-1, 2*rd.random()-1
+            while dist(o, Point(x, y, z)) > 1 :
+                x, y, z = 2*rd.random()-1, 2*rd.random()-1, 2*rd.random()-1
+            X, Y, Z = X+x, Y+y, Z+z
             self.p_list.append([x, y, z])
             self.points.append(Point(x, y, z))
+        self.bary = Point(X/N, Y/N, Z/N)
         self.p_arr = np.asarray(self.p_list)
-    
-        if DoA > 0 :
-            self.ax.set_xlim(self.limits(0))
-            self.ax.set_ylim(self.limits(1))
-            self.ax.set_zlim(self.limits(2))
 
     #Plotting functions :
     def draw(self, c="blue") :
-        self.ax.scatter(self.p_arr[:,0], self.p_arr[:,1], self.p_arr[:,2], c=c, marker='.', linewidths=0.5)
+        self.ax.scatter(self.p_arr[:,0], self.p_arr[:,1], self.p_arr[:,2], c=c, marker='.', linewidths=0.1)
 
     def draw_hull(self, c="green") :
         for edge in self.hull_edges :
@@ -99,29 +98,40 @@ class Scatter :
     
     #Gif building
     def build_gif(self) :
-        self.ax.margins(x=-0.4, y=-0.4)
         plt.savefig("temp.png")
-        self.video.write(cv2.imread("temp.png"))
+        if name.endswith(".gif") :
+            self.writer.append_data(imageio.imread("temp.png"))
+        else :
+            self.writer.write(cv2.imread("temp.png"))
     
     def start_gif(self) :    #Starts the gif by doing a full rotation around the scatter.
         self.ax.clear()
+        self.ax.set_xlim((-0.7, 0.7))
+        self.ax.set_ylim((-0.7, 0.7))
+        self.ax.set_zlim((-0.6, 0.6))
         self.ax.set_axis_off()
         self.draw()
         for i in range(45) :
-            self.ax.view_init(azim = 8*i, elev = 30)
+            self.ax.view_init(azim = 8*i)
             self.build_gif()
     
     def end_gif(self) :    #Starts the gif by doing a full rotation around the scatter and its hull.
         self.ax.clear()
+        self.ax.set_xlim((-0.7, 0.7))
+        self.ax.set_ylim((-0.7, 0.7))
+        self.ax.set_zlim((-0.6, 0.6))
         self.ax.set_axis_off()
         self.draw()
         self.draw_hull()
         for i in range(45) :
-            self.ax.view_init(azim = self.frame + 8*i, elev = 30*m.cos(self.frame*m.pi/180))
+            self.ax.view_init(azim = self.frame + 8*i)
             self.build_gif()
 
     def draw_step(self, tri=None, k_res=None) :
         self.ax.clear()
+        self.ax.set_xlim((-0.7, 0.7))
+        self.ax.set_ylim((-0.7, 0.7))
+        self.ax.set_zlim((-0.6, 0.6))
         self.ax.set_axis_off()
         self.draw()
         self.draw_hull()
@@ -140,7 +150,7 @@ class Scatter :
                     color = "red"
                 self.ax.scatter(k.x, k.y, k.z, marker='o', c=color, linewidths=3)
             
-        self.ax.view_init(azim = self.frame, elev = 30*m.cos(self.frame*m.pi/180))
+        self.ax.view_init(azim = self.frame)
 
         self.build_gif()
 
@@ -179,24 +189,41 @@ class Scatter :
             if k in {edge.A, edge.B, pivot} :
                 continue
             res = s*direct(edge, pivot, k)
+
             if DoA == 3 :
                 self.draw_step((edge, pivot), (k, res))
+
             if res < 0 :
+
                 if DoA == 2 :
                     self.draw_step((edge, pivot))
+
                 pivot = k
+        
         if DoA >= 2 :
             self.draw_step((edge, pivot))
+        
         return pivot
 
     #The main algorithm
     def find_hull(self) :
         i, j = self.get_pivots()
-        self.hull = {i, j}
         pivot = Edge(i, j)
-        self.hull_edges = {pivot:0}
-        unused_edges = [pivot]
+        self.hull_edges = {pivot:2}
+        unused_edges = []
+        
+        #Initialization with the pivot :
+        for s in {-1, 1} :
+            point = self.find_triangle(pivot, s)
+            edgeA, edgeB = Edge(pivot.A, point, pivot.B), Edge(pivot.B, point, pivot.A)
+            self.hull_edges[edgeA] = 1
+            unused_edges.append(edgeA)
+            self.hull_edges[edgeB] = 1
+            unused_edges.append(edgeB)
+            if DoA > 0 :
+                self.draw_step()
 
+        #Loop :
         while unused_edges != [] :
             if search_type == "DFS" :
                 edge = unused_edges.pop()
@@ -207,27 +234,20 @@ class Scatter :
             if self.hull_edges[edge] >= 2 :
                 continue
             
-            for s in {1, -1} :
+            point = self.find_triangle(edge, -direct(edge, edge.C, self.bary))
+            #The algorithm will always search in the direction opposite to the known triangle (made by edge.A, edge.B and edge.C)
+            new_edges = Edge(edge.A, point, edge.B), Edge(edge.B, point, edge.A)
 
-                point = self.find_triangle(edge, s)
-                self.hull.add(point)
-                new_edges = Edge(edge.A, point), Edge(edge.B, point)
+            has_new_edge = False
+            for new_e in new_edges :
+                if new_e not in self.hull_edges :
+                    self.hull_edges[new_e] = 0
+                    unused_edges.append(new_e)
+                    has_new_edge = True
+                self.hull_edges[new_e] += 1
 
-                is_old_triangle = True  #Checking if the current triangle is already in the hull
-                for new_e in new_edges :
-                    if new_e not in self.hull_edges :
-                        self.hull_edges[new_e] = 0
-                        is_old_triangle = False
-                        unused_edges.append(new_e)
-                
-                if not is_old_triangle :
-                    for new_e in new_edges :
-                        self.hull_edges[new_e] += 1
-                        if DoA > 0 :
-                            self.draw_step()
-
-                    if edge != pivot :
-                        break   #No need to try the other triangle, it will be an old triangle.
+            if has_new_edge and DoA > 0 :
+                self.draw_step()
 
 #Geometrical algebra functions :
 
@@ -244,7 +264,7 @@ def direct(edge:Edge, pivot:Point, k:Point) :
         [1, pivot.x, pivot.y, pivot.z],
         [1, k.x, k.y, k.z]
     ])
-    return np.linalg.det(mat)
+    return np.sign(np.linalg.det(mat))
 
 def dist(a, b) :
     return ((a.x-b.x)**2+(a.y-b.y)**2+(a.z-b.z)**2)**0.5
@@ -256,6 +276,7 @@ DoA = int(File.readline().strip().split(" : ")[1])
 N = int(File.readline().strip().split(" : ")[1])
 search_type = File.readline().strip().split(" : ")[1]
 name = File.readline().strip().split(" : ")[1]
+assert name.endswith(".avi") or name.endswith(".mp4") or name.endswith(".gif")
 W, H = map(int, File.readline().strip().split(" : ")[1].split(', '))
 File.close()
 
@@ -268,22 +289,25 @@ plt.get_current_fig_manager().full_screen_toggle()
 
 #Running the thing : 
 if DoA > 0 :
-    print("Making video intro")
+    print("Making video intro...")
     t0 = time()
     S.start_gif()
     print(f"took {round(time()-t0, 6)}s")
 
-print("Starting algorithm")
+print("Building hull...")
 t0 = time()
 S.find_hull()
-print(f"building hull took {round(time()-t0, 6)}s (ploting, saving frames and building video included)") 
+print(f"took {round(time()-t0, 6)}s (ploting, saving frames and building video included)") 
 
 if DoA > 0 :
-    print("Making video outro")
+    print("Making video outro...")
     t0 = time()
     S.end_gif()
-    cv2.destroyAllWindows()
-    S.video.release()
+    if name.endswith(".gif") :
+        S.writer.close()
+    else :
+        cv2.destroyAllWindows()
+        S.writer.release()
     print(f"took {round(time()-t0, 6)}s")
 
 os.remove("temp.png")
