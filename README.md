@@ -1,5 +1,7 @@
 # 3D_hull_builder
-A showcase of a 3 dimensionnal convex hull algorithm I made based on Jarvis's 2D hull algorithm. Here are som sample results (to heavy for github) : https://drive.google.com/drive/folders/1QGJblYAbQKOeU1jot488iwtMXGHCHofZ?usp=sharing
+A showcase of a 3 dimensionnal convex hull algorithm I made based on Jarvis's 2D hull algorithm. Here are som sample results:
+- in a drive: https://drive.google.com/drive/folders/1QGJblYAbQKOeU1jot488iwtMXGHCHofZ?usp=sharing
+- on youtube: https://www.youtube.com/@leroymilo/search?query=hull
 
 Everything should be in settings.exe . There are some extra features unlocked by uncommenting some code if you can read it.
 It's not commented properly but names should be explicit enough, good luck.
