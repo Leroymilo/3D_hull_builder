@@ -3,7 +3,7 @@ A showcase of a 3 dimensionnal convex hull algorithm I made based on Jarvis's 2D
 - in a drive: https://drive.google.com/drive/folders/1QGJblYAbQKOeU1jot488iwtMXGHCHofZ?usp=sharing
 - on youtube: https://www.youtube.com/@leroymilo/search?query=hull
 
-Everything should be in settings.exe . There are some extra features unlocked by uncommenting some code if you can read it.
+Everything should be in settings.txt . There are some extra features unlocked by uncommenting some code if you can read it.
 It's not commented properly but names should be explicit enough, good luck.
 
 Update : you can now choose the format in which the result is saved and you can choose the resolution !
